@@ -1,0 +1,10 @@
+# ============================================================== 
+# Parameters Used for Payment Gateway Service
+# ==============================================================
+
+# ============================================================== 
+# Acquiring Bank API parameters
+# ==============================================================
+acquiring_bank_api_key: ''
+acquiring_bank_api_url: ''
+acquiring_bank_test_mode: True
