@@ -6,8 +6,7 @@
 # ==============================================================
 import logging
 from contextlib import contextmanager
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from payment_gateway.transaction_format import TransactionFormat
 from payment_gateway.api_acquiring_bank import APIAcquiringBank
@@ -21,28 +20,24 @@ from payment_gateway.database import CardInformation, PaymentStatus
 class ProcessPayment:
     """ Class to process the payment
     """
-    def __init__(self, db_uri='sqlite:///./test.db'):
+    def __init__(self, db_session: Session):
         self.api_bank = APIAcquiringBank()
-        self.engine = create_engine(db_uri, echo=True)
-        CardInformation.metadata.create_all(self.engine)
-        PaymentStatus.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
+        self.db_session = db_session
         self.logger = logging.getLogger(__name__)
 
     @contextmanager
     def get_session(self):
         """ Context Manager to handle session opening and closing
         """
-        session = self.Session()
         try:
-            yield session
-            session.commit()
+            yield self.db_session
+            self.db_session.commit()
         except Exception as e:
-            session.rollback()
+            self.db_session.rollback()
             self.logger.error(f"Error in session: {e}")
             raise
         finally:
-            session.close()
+            self.db_session.close()
 
     def get_or_create_card_information(self, payment_data: TransactionFormat) -> int:
         """ Method to check if card information exists in database.
@@ -97,7 +92,7 @@ class ProcessPayment:
         # Return Payment status and information
         result_process_payment = {
             "payment_id": payment_id,
-            "status": "payment succesfull" if payment_code == "200" else "payment rejected"
+            "status": "payment successful" if payment_code == "200" else "payment rejected"
         }
         # Return error message only if payment is unsuccesful
         if payment_code != "200":
