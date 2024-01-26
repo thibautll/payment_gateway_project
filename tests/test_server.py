@@ -4,8 +4,8 @@
 # ==============================================================
 #                         IMPORTS
 # ==============================================================
-import json
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 from payment_gateway.server import payment_gateway_app
 from freezegun import freeze_time
 
@@ -17,9 +17,13 @@ payment_client = TestClient(payment_gateway_app)
 
 
 @freeze_time("2024-01-25")
-def test_process_payment_ok():
+@patch('payment_gateway.process_payment.ProcessPayment.get_session')
+def test_process_payment_ok(mock_get_session):
     """ Validate the possibility to process a succesfull payment
     """
+    # Mocking the session
+    mock_session = MagicMock()
+    mock_get_session.return_value = mock_session
 
     valid_payment_data = {
         "card_owner": "Martin Dupont",
@@ -35,9 +39,34 @@ def test_process_payment_ok():
     assert response_process_payment.headers["content-type"] == "application/json"
 
     result_process_payment = response_process_payment.json()
+    assert result_process_payment["status"] == "payment succesfull"
 
-    assert result_process_payment["payment_id"] == 1
-    assert result_process_payment["status"] == "accepted"
+
+@freeze_time("2024-01-25")
+@patch('payment_gateway.process_payment.ProcessPayment.get_session')
+def test_process_payment_nok(mock_get_session):
+    """ Validate the possibility to process a succesfull payment
+    """
+    # Mocking the session
+    mock_session = MagicMock()
+    mock_get_session.return_value = mock_session
+
+    valid_payment_data = {
+        "card_owner": "Martin Fail",
+        "card_number": "4012888888881881",
+        "expiration_date": "03/25",
+        "ccv": "123",
+        "amount": 25,
+        "currency": "USD"
+    }
+    response_process_payment = payment_client.post('/process_payment', json=valid_payment_data)
+
+    assert response_process_payment.status_code == 200
+    assert response_process_payment.headers["content-type"] == "application/json"
+
+    result_process_payment = response_process_payment.json()
+    assert result_process_payment["status"] == "payment rejected"
+    assert result_process_payment["reason"] == "Error during payment"
 
 
 @freeze_time("2024-01-25")
