@@ -29,6 +29,21 @@ Execute the service
 ------------
 ```
 poetry run uvicorn payment_gateway.server:payment_gateway_app --reload
+
+Then, to process a payment:
+curl --request POST 'http://127.0.0.1:8000/process_payment' \
+--data '{
+    "card_owner": "<FIRSTNAME LASTNAME>",
+    "card_number": "<VALID_CARD_NUMBER>",
+    "expiration_date": "<MM/YY>",
+    "ccv": "<CCV>",
+    "amount": <FLOAT>,
+    "currency": "<CURRENCY_ON_3_LETTERS>"
+}'
+
+To retrieve a payment:
+curl --request GET 'http://127.0.0.1:8000/retrieve_payment?payment_identifier=<FILL_WITH_ID_RETURNED_BY_POST>'
+
 ```
 
 Execute the Tests
